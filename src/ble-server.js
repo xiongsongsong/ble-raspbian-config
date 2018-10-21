@@ -17,15 +17,21 @@ const services = {
   },
   // 检查网络是否已经接通
   async network() {
-    return new Promise((resolve)=>{
+    if(this.pending === true) {
+      return Buffer.from(`internet=${this.prevStatus}`)
+    }
+    this.pending = true
+    return new Promise((resolve) => {
       request('https://hospital.ruoshui.ai/account/ns/login', {
         timeout: 1000
       }, (err, res) => {
-          if(err) {
-            resolve(Buffer.from(`internet=0`))
-            return
-          }
-          resolve(Buffer.from(`internet=${(res.statusCode === 200)}`))
+        this.pending = false
+        if (err) {
+          this.prevStatus = false
+        } else {
+          this.prevStatus = res.statusCode === 200
+        }
+        resolve(Buffer.from(`internet=${this.prevStatus}`))
       })
     })
   },
@@ -35,7 +41,7 @@ const services = {
   }
 }
 
-// 有多少个服务
+// 服务列表
 const servicesMap = Object.keys(services)
 
 
