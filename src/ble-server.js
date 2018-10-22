@@ -89,7 +89,7 @@ bleno.on('advertisingStart', (error) => {
               callback(bleno.Characteristic.RESULT_SUCCESS ,await services[servicesMap[randIndex]]())
             },
             onWriteRequest(data, offset, withoutResponse, callback) {
-              console.log(ab2str(data))
+              console.log(data.toString('hex') ,data.length)
               callback(bleno.Characteristic.RESULT_SUCCESS)
             }
           })
@@ -98,3 +98,4 @@ bleno.on('advertisingStart', (error) => {
     ])
   }
 })
+
