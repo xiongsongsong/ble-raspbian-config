@@ -6,23 +6,10 @@ const bleno = require('bleno')
 const name = 'name';
 const ip = require('ip')
 const request = require('request')
-
-// ArrayBuffer 转为字符串，参数为 ArrayBuffer 对象
-function ab2str(buf) {
-  // 注意，如果是大型二进制数组，为了避免溢出，
-  // 必须一个一个字符地转
-  if (buf && buf.byteLength < 1024) {
-    return String.fromCharCode.apply(null, new Uint16Array(buf))
-  }
-
-  const bufView = new Uint16Array(buf)
-  const len = bufView.length
-  const bstr = new Array(len)
-  for (let i = 0; i < len; i++) {
-    bstr[i] = String.fromCharCode.call(null, bufView[i])
-  }
-  return bstr.join('')
-}
+var BLE_BUFFER = Buffer.from('')
+const { Subject } = require('rxjs')
+const subject = new Subject()
+const {debounce} = require('lodash')
 
 /**
  * 服务
@@ -72,6 +59,7 @@ bleno.on('stateChange',(state) => {
   }
 })
 
+var prevNow = Date.now()
 bleno.on('advertisingStart', (error) => {
   console.log('on -> advertisingStart: ' + (error ? 'error ' + error : 'success'))
   if(!error) { 
@@ -89,7 +77,10 @@ bleno.on('advertisingStart', (error) => {
               callback(bleno.Characteristic.RESULT_SUCCESS ,await services[servicesMap[randIndex]]())
             },
             onWriteRequest(data, offset, withoutResponse, callback) {
-              console.log(data.toString('hex') ,data.length)
+              BLE_BUFFER = Buffer.concat([BLE_BUFFER, data])
+              console.log(Date.now()-prevNow)
+              prevNow = Date.now()
+              check()
               callback(bleno.Characteristic.RESULT_SUCCESS)
             }
           })
@@ -99,3 +90,7 @@ bleno.on('advertisingStart', (error) => {
   }
 })
 
+const check = debounce(()=>{
+  console.log(BLE_BUFFER.toString('utf16le') ,BLE_BUFFER.length)
+  BLE_BUFFER = Buffer.from('')
+}, 500)
