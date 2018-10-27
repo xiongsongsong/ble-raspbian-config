@@ -1,16 +1,19 @@
 const {Subject } = require('rxjs')
-const { bufferWhen, interval } = require('rxjs/operators')
+const { share,filter } = require('rxjs/operators')
 
 const subject = new Subject()
 
-const buffered = subject.pipe(bufferWhen(data=>{
-  return new Promise((r)=>{
-    r(data)=
-  })
-}));
+exports.subject = subject
 
-setInterval(()=>{
-  subject.next(Date.now())
-},1000)
+exports.on = function (type) {
+  return subject.pipe(share(),filter((str)=>{
+    try{
+      let json = JSON.parse(str)
+      if(json.type===type){
+        return json
+      }
+    } catch(e) {
 
-buffered.subscribe(x => console.log('ok',x));
+    }
+  }))
+}

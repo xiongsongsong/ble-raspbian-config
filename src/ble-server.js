@@ -7,10 +7,10 @@ const name = 'name';
 const ip = require('ip')
 const request = require('request')
 var BLE_BUFFER = Buffer.from('')
-const { Subject } = require('rxjs')
-const subject = new Subject()
 const {debounce} = require('lodash')
+const { on, subject } = require('./rx$.js')
 
+// 每个数据包末尾都会发送EOF_BUF过来，此处进行监听
 const EOF_BUF = new ArrayBuffer(20)
 const EOF_BUF_VIEW = new Uint16Array(EOF_BUF)
 EOF_BUF_VIEW.fill(0xff)
@@ -57,7 +57,6 @@ const services = {
 // 服务列表
 const servicesMap = Object.keys(services)
 
-
 bleno.on('stateChange',(state) => {
   console.log('on -> stateChange: ' + state)
   if(state === 'poweredOn') {
@@ -68,7 +67,6 @@ bleno.on('stateChange',(state) => {
   }
 })
 
-var prevNow = Date.now()
 bleno.on('advertisingStart', (error) => {
   console.log('on -> advertisingStart: ' + (error ? 'error ' + error : 'success'))
   if(!error) { 
@@ -87,8 +85,6 @@ bleno.on('advertisingStart', (error) => {
             },
             onWriteRequest(data, offset, withoutResponse, callback) {
               BLE_BUFFER = Buffer.concat([BLE_BUFFER, data])
-              //console.log(Date.now()-prevNow)
-              //prevNow = Date.now()
               check()
               callback(bleno.Characteristic.RESULT_SUCCESS)
             }
@@ -104,7 +100,7 @@ function check(){
   // 如果相等，则说明数据传输完毕
   let CACHE = BLE_BUFFER.slice(BLE_BUFFER.length - 20)
   if(CACHE.equals(EOF)){
-    console.log(BLE_BUFFER.slice(0, -20).toString('utf16le'))
+    subject.next(BLE_BUFFER.slice(0, -20).toString('utf16le'))
     BLE_BUFFER = Buffer.from('')
   }
 }
